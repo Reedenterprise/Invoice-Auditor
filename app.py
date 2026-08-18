@@ -17,17 +17,19 @@ if not api_key:
     except Exception:
         pass
 
-# Set environment variables so CrewAI / LiteLLM hooks into Gemini natively
+# Configure environment for LiteLLM + Gemini routing
 os.environ["GEMINI_API_KEY"] = api_key if api_key else ""
-os.environ["MODEL"] = "gemini/gemini-1.5-flash"
+os.environ["OPENAI_API_KEY"] = "not-needed"
+os.environ["OPENAI_API_BASE"] = "https://generativelanguage.googleapis.com/v1beta/openai/"
 
-# Define Agents & Tasks (using native environment model routing)
+# Define Agents using explicit Gemini model configuration string
 extraction_agent = Agent(
     role="Senior Construction Accounts Payable Clerk",
     goal="Extract line items, totals, and vendor data from subcontractor invoices with 100% accuracy.",
     backstory="You have 15 years of experience reading complex commercial construction invoices. You never miss a decimal point.",
     verbose=True,
-    allow_delegation=False
+    allow_delegation=False,
+    llm="gemini/gemini-1.5-flash"
 )
 
 compliance_agent = Agent(
@@ -35,7 +37,8 @@ compliance_agent = Agent(
     goal="Audit extracted invoice data against state compliance laws and flag any missing lien waivers or math errors.",
     backstory="You are a ruthless compliance officer. You protect the general contractor from financial risk by catching errors before payments go out.",
     verbose=True,
-    allow_delegation=False
+    allow_delegation=False,
+    llm="gemini/gemini-1.5-flash"
 )
 
 extract_task = Task(
