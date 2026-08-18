@@ -5,7 +5,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-llm = LLM(model=os.getenv("GEMINI_MODEL", "gemini/gemini-1.5-flash"))
+llm = LLM(
+    model="gemini/gemini-1.5-flash",
+    provider="google"
+)
 
 extraction_agent = Agent(
     role="Senior Construction Accounts Payable Clerk",
