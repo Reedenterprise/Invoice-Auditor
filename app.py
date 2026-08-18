@@ -33,8 +33,8 @@ if uploaded_file is not None:
         else:
             with st.spinner("Running AI Extraction and Compliance Audit..."):
                 try:
-                    # Using the exact prefixed model name required by the API backend
-                    model = genai.GenerativeModel("models/gemini-1.5-flash")
+                    # Using the active production model identifier
+                    model = genai.GenerativeModel("gemini-2.5-flash")
                     
                     # Open uploaded image
                     image = Image.open(uploaded_file)
