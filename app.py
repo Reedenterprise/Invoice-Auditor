@@ -1,7 +1,6 @@
 import os
 import streamlit as st
 import google.generativeai as genai
-from PIL import Image
 
 # Configure Page
 st.set_page_config(page_title="Invoice Auditor Pro", page_icon="🧾", layout="wide")
@@ -24,7 +23,12 @@ if api_key:
 uploaded_file = st.file_uploader("Upload Subcontractor Invoice (PDF or Image)", type=["pdf", "png", "jpg", "jpeg"])
 
 if uploaded_file is not None:
-    st.image(uploaded_file, caption="Uploaded Invoice", use_container_width=True)
+    # Gracefully handle UI display so PDFs don't crash the image viewer
+    if uploaded_file.type.startswith("image/"):
+        st.image(uploaded_file, caption="Uploaded Invoice", use_container_width=True)
+    elif uploaded_file.type == "application/pdf":
+        st.write(f"📄 **PDF Uploaded:** `{uploaded_file.name}`")
+        
     st.success("Invoice uploaded successfully!")
     
     if st.button("Run Audit"):
@@ -33,11 +37,14 @@ if uploaded_file is not None:
         else:
             with st.spinner("Running AI Extraction and Compliance Audit..."):
                 try:
-                    # Using the active production model identifier
-                    model = genai.GenerativeModel("gemini-2.5-flash")
+                    # Using the standard active model
+                    model = genai.GenerativeModel("gemini-1.5-flash")
                     
-                    # Open uploaded image
-                    image = Image.open(uploaded_file)
+                    # Bypass PIL entirely and feed the raw bytes natively to Gemini
+                    file_data = {
+                        "mime_type": uploaded_file.type,
+                        "data": uploaded_file.getvalue()
+                    }
                     
                     prompt = """
                     You are a Senior Construction Accounts Payable Clerk and Construction Project Controller.
@@ -48,7 +55,7 @@ if uploaded_file is not None:
                     Provide a structured, professional audit report.
                     """
                     
-                    response = model.generate_content([image, prompt])
+                    response = model.generate_content([file_data, prompt])
                     
                     st.subheader("Audit Results")
                     st.markdown(response.text)
