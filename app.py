@@ -1,6 +1,6 @@
 import os
 import streamlit as st
-from crewai import Agent, Task, Crew, Process, LLM
+from crewai import Agent, Task, Crew, Process
 
 # Configure Page
 st.set_page_config(page_title="Invoice Auditor Pro", page_icon="🧾", layout="wide")
@@ -17,17 +17,17 @@ if not api_key:
     except Exception:
         pass
 
-# Initialize explicit Gemini LLM instance for CrewAI
-gemini_llm = LLM(model="gemini/gemini-1.5-flash", api_key=api_key)
+# Set environment variables so CrewAI / LiteLLM hooks into Gemini natively
+os.environ["GEMINI_API_KEY"] = api_key if api_key else ""
+os.environ["MODEL"] = "gemini/gemini-1.5-flash"
 
-# Define Agents & Tasks with explicit Gemini LLM
+# Define Agents & Tasks (using native environment model routing)
 extraction_agent = Agent(
     role="Senior Construction Accounts Payable Clerk",
     goal="Extract line items, totals, and vendor data from subcontractor invoices with 100% accuracy.",
     backstory="You have 15 years of experience reading complex commercial construction invoices. You never miss a decimal point.",
     verbose=True,
-    allow_delegation=False,
-    llm=gemini_llm
+    allow_delegation=False
 )
 
 compliance_agent = Agent(
@@ -35,8 +35,7 @@ compliance_agent = Agent(
     goal="Audit extracted invoice data against state compliance laws and flag any missing lien waivers or math errors.",
     backstory="You are a ruthless compliance officer. You protect the general contractor from financial risk by catching errors before payments go out.",
     verbose=True,
-    allow_delegation=False,
-    llm=gemini_llm
+    allow_delegation=False
 )
 
 extract_task = Task(
