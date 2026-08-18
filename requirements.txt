@@ -1,6 +1,6 @@
 streamlit>=1.30.0
-crewai==0.28.8
-litellm>=1.30.0
-setuptools==81.0.0
+google-generativeai>=0.3.0
+pillow>=10.0.0
 python-dotenv>=1.0.0
 pydantic>=2.0.0
+setuptools==81.0.0
