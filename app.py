@@ -8,16 +8,6 @@ st.set_page_config(page_title="Invoice Auditor Pro", page_icon="🧾", layout="w
 st.title("🧾 Invoice Auditor Pro")
 st.markdown("Automated Subcontractor Invoice Extraction & Compliance Auditing")
 
-# Ensure API keys are availableimport os
-import streamlit as st
-import google.generativeai as genai
-
-# Configure Page
-st.set_page_config(page_title="Invoice Auditor Pro", page_icon="🧾", layout="wide")
-
-st.title("🧾 Invoice Auditor Pro")
-st.markdown("Automated Subcontractor Invoice Extraction & Compliance Auditing")
-
 # Ensure API keys are available
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
@@ -48,59 +38,7 @@ if uploaded_file is not None:
             with st.spinner("Running AI Extraction and Compliance Audit..."):
                 try:
                     # Using the exact model requested by the API error message
-                    model = genai.GenerativeModel("gemini-3.6-flash")
-                    
-                    # Bypass PIL entirely and feed the raw bytes natively to Gemini
-                    file_data = {
-                        "mime_type": uploaded_file.type,
-                        "data": uploaded_file.getvalue()
-                    }
-                    
-                    prompt = """
-                    You are a Senior Construction Accounts Payable Clerk and Construction Project Controller.
-                    Analyze this subcontractor invoice:
-                    1. Extract all line items, quantities, unit prices, total amounts, and vendor details.
-                    2. Audit the extracted data for arithmetic accuracy, matching totals, and flag any missing compliance requirements or math errors.
-                    
-                    Provide a structured, professional audit report.
-                    """
-                    
-                    response = model.generate_content([file_data, prompt])
-                    
-                    st.subheader("Audit Results")
-                    st.markdown(response.text)
-                except Exception as e:
-                    st.error(f"An error occurred during execution: {e}")
-api_key = os.getenv("GEMINI_API_KEY")
-if not api_key:
-    try:
-        api_key = st.secrets["GEMINI_API_KEY"]
-    except Exception:
-        pass
-
-if api_key:
-    genai.configure(api_key=api_key)
-
-# Streamlit User Interface
-uploaded_file = st.file_uploader("Upload Subcontractor Invoice (PDF or Image)", type=["pdf", "png", "jpg", "jpeg"])
-
-if uploaded_file is not None:
-    # Gracefully handle UI display so PDFs don't crash the image viewer
-    if uploaded_file.type.startswith("image/"):
-        st.image(uploaded_file, caption="Uploaded Invoice", use_container_width=True)
-    elif uploaded_file.type == "application/pdf":
-        st.write(f"📄 **PDF Uploaded:** `{uploaded_file.name}`")
-        
-    st.success("Invoice uploaded successfully!")
-    
-    if st.button("Run Audit"):
-        if not api_key:
-            st.error("Gemini API key not found in environment or secrets!")
-        else:
-            with st.spinner("Running AI Extraction and Compliance Audit..."):
-                try:
-                    # Using the ACTIVE production model that actually exists
-                    model = genai.GenerativeModel("gemini-2.5-flash")
+                    model = genai.GenerativeModel("models/gemini-3.6-flash")
                     
                     # Bypass PIL entirely and feed the raw bytes natively to Gemini
                     file_data = {
