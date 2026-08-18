@@ -1,25 +1,73 @@
-﻿import streamlit as st
 import os
-from invoice_crew import build_invoice_crew
-from main import load_invoice_text
+import streamlit as st
+from crewai import Agent, Task, Crew, Process
 
-st.title("🏗️ Invoice Auditor Pro")
-st.write("Upload a subcontractor invoice to instantly verify math and check for lien waivers.")
+# Configure Page
+st.set_page_config(page_title="Invoice Auditor Pro", page_icon="🧾", layout="wide")
 
-uploaded_file = st.file_uploader("Drop your PDF invoice here", type="pdf")
+st.title("🧾 Invoice Auditor Pro")
+st.markdown("Automated Subcontractor Invoice Extraction & Compliance Auditing")
+
+# Ensure API key is available
+api_key = os.getenv("GEMINI_API_KEY")
+if not api_key:
+    # Try loading from Streamlit secrets if running on Streamlit Cloud
+    try:
+        api_key = st.secrets["GEMINI_API_KEY"]
+        os.environ["GEMINI_API_KEY"] = api_key
+    except Exception:
+        pass
+
+os.environ["GEMINI_MODEL"] = "gemini/gemini-1.5-flash"
+
+# Define Agents & Tasks inline to avoid import collisions
+extraction_agent = Agent(
+    role="Senior Construction Accounts Payable Clerk",
+    goal="Extract line items, totals, and vendor data from subcontractor invoices with 100% accuracy.",
+    backstory="You have 15 years of experience reading complex commercial construction invoices. You never miss a decimal point.",
+    verbose=True,
+    allow_delegation=False
+)
+
+compliance_agent = Agent(
+    role="Construction Project Controller",
+    goal="Audit extracted invoice data against state compliance laws and flag any missing lien waivers or math errors.",
+    backstory="You are a ruthless compliance officer. You protect the general contractor from financial risk by catching errors before payments go out.",
+    verbose=True,
+    allow_delegation=False
+)
+
+extract_task = Task(
+    description="Analyze the uploaded invoice document and extract all line items, quantities, unit prices, total amounts, and vendor details.",
+    expected_output="A structured JSON object containing vendor name, invoice date, line items, and total amount.",
+    agent=extraction_agent
+)
+
+audit_task = Task(
+    description="Review the extracted invoice data for arithmetic accuracy, matching totals, and flag any missing compliance requirements.",
+    expected_output="An audit report detailing the validation results, math checks, and compliance status.",
+    agent=compliance_agent
+)
+
+def build_invoice_crew():
+    return Crew(
+        agents=[extraction_agent, compliance_agent],
+        tasks=[extract_task, audit_task],
+        process=Process.sequential,
+        verbose=True
+    )
+
+# Streamlit User Interface
+uploaded_file = st.file_uploader("Upload Subcontractor Invoice (PDF or Image)", type=["pdf", "png", "jpg", "jpeg"])
 
 if uploaded_file is not None:
-    if st.button("Run AI Audit"):
-        with st.spinner("AI is reading the document..."):
-            temp_path = uploaded_file.name
-            with open(temp_path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
-                
-            invoice_text = load_invoice_text(temp_path)
-            crew = build_invoice_crew()
-            result = crew.kickoff(inputs={"invoice_text": invoice_text})
-            
-            st.success("Audit Complete!")
-            st.write(str(result).replace("$", "\\$"))
-            
-            os.remove(temp_path)
+    st.success("Invoice uploaded successfully!")
+    if st.button("Run Audit"):
+        with st.spinner("Running AI Extraction and Compliance Audit..."):
+            try:
+                crew = build_invoice_crew()
+                result = crew.kickoff()
+                st.subheader("Audit Results")
+                st.write(result)
+            except Exception as e:
+                st.error(f"An error occurred during execution: {e}")
