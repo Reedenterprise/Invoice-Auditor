@@ -8,16 +8,17 @@ st.set_page_config(page_title="Invoice Auditor Pro", page_icon="🧾", layout="w
 st.title("🧾 Invoice Auditor Pro")
 st.markdown("Automated Subcontractor Invoice Extraction & Compliance Auditing")
 
-# Ensure API key is available
+# Ensure API keys are available
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
-    # Try loading from Streamlit secrets if running on Streamlit Cloud
     try:
         api_key = st.secrets["GEMINI_API_KEY"]
         os.environ["GEMINI_API_KEY"] = api_key
     except Exception:
         pass
 
+# CrewAI internal validation requirements
+os.environ["OPENAI_API_KEY"] = "sk-dummy-key-for-validation"
 os.environ["GEMINI_MODEL"] = "gemini/gemini-1.5-flash"
 
 # Define Agents & Tasks inline to avoid import collisions
