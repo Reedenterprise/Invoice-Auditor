@@ -1,6 +1,6 @@
 ﻿import streamlit as st
 import os
-from crew import build_invoice_crew
+from invoice_crew import build_invoice_crew
 from main import load_invoice_text
 
 st.title("🏗️ Invoice Auditor Pro")
