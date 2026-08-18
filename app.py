@@ -37,8 +37,8 @@ if uploaded_file is not None:
         else:
             with st.spinner("Running AI Extraction and Compliance Audit..."):
                 try:
-                    # Using the standard active model
-                    model = genai.GenerativeModel("gemini-1.5-flash")
+                    # Using the ACTIVE production model that actually exists
+                    model = genai.GenerativeModel("gemini-2.5-flash")
                     
                     # Bypass PIL entirely and feed the raw bytes natively to Gemini
                     file_data = {
