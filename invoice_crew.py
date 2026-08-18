@@ -1,8 +1,10 @@
 import sys
 import os
 
-# Ensure Python can find local modules
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Force Python to recognize the current directory as a package path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
 
 from crewai import Crew, Process
 from agents import compliance_agent, extraction_agent
