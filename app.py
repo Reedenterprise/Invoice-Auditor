@@ -1,6 +1,7 @@
 import os
 import streamlit as st
-from crewai import Agent, Task, Crew, Process
+import google.generativeai as genai
+from PIL import Image
 
 # Configure Page
 st.set_page_config(page_title="Invoice Auditor Pro", page_icon="🧾", layout="wide")
@@ -13,65 +14,43 @@ api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
     try:
         api_key = st.secrets["GEMINI_API_KEY"]
-        os.environ["GEMINI_API_KEY"] = api_key
     except Exception:
         pass
 
-# Configure environment for LiteLLM + Gemini routing
-os.environ["GEMINI_API_KEY"] = api_key if api_key else ""
-os.environ["OPENAI_API_KEY"] = "not-needed"
-os.environ["OPENAI_API_BASE"] = "https://generativelanguage.googleapis.com/v1beta/openai/"
-
-# Define Agents using explicit Gemini model configuration string
-extraction_agent = Agent(
-    role="Senior Construction Accounts Payable Clerk",
-    goal="Extract line items, totals, and vendor data from subcontractor invoices with 100% accuracy.",
-    backstory="You have 15 years of experience reading complex commercial construction invoices. You never miss a decimal point.",
-    verbose=True,
-    allow_delegation=False,
-    llm="gemini/gemini-1.5-flash"
-)
-
-compliance_agent = Agent(
-    role="Construction Project Controller",
-    goal="Audit extracted invoice data against state compliance laws and flag any missing lien waivers or math errors.",
-    backstory="You are a ruthless compliance officer. You protect the general contractor from financial risk by catching errors before payments go out.",
-    verbose=True,
-    allow_delegation=False,
-    llm="gemini/gemini-1.5-flash"
-)
-
-extract_task = Task(
-    description="Analyze the uploaded invoice document and extract all line items, quantities, unit prices, total amounts, and vendor details.",
-    expected_output="A structured JSON object containing vendor name, invoice date, line items, and total amount.",
-    agent=extraction_agent
-)
-
-audit_task = Task(
-    description="Review the extracted invoice data for arithmetic accuracy, matching totals, and flag any missing compliance requirements.",
-    expected_output="An audit report detailing the validation results, math checks, and compliance status.",
-    agent=compliance_agent
-)
-
-def build_invoice_crew():
-    return Crew(
-        agents=[extraction_agent, compliance_agent],
-        tasks=[extract_task, audit_task],
-        process=Process.sequential,
-        verbose=True
-    )
+if api_key:
+    genai.configure(api_key=api_key)
 
 # Streamlit User Interface
 uploaded_file = st.file_uploader("Upload Subcontractor Invoice (PDF or Image)", type=["pdf", "png", "jpg", "jpeg"])
 
 if uploaded_file is not None:
+    st.image(uploaded_file, caption="Uploaded Invoice", use_container_width=True)
     st.success("Invoice uploaded successfully!")
+    
     if st.button("Run Audit"):
-        with st.spinner("Running AI Extraction and Compliance Audit..."):
-            try:
-                crew = build_invoice_crew()
-                result = crew.kickoff()
-                st.subheader("Audit Results")
-                st.write(result)
-            except Exception as e:
-                st.error(f"An error occurred during execution: {e}")
+        if not api_key:
+            st.error("Gemini API key not found in environment or secrets!")
+        else:
+            with st.spinner("Running AI Extraction and Compliance Audit..."):
+                try:
+                    # Load model
+                    model = genai.GenerativeModel("gemini-1.5-flash")
+                    
+                    # Open uploaded image
+                    image = Image.open(uploaded_file)
+                    
+                    prompt = """
+                    You are a Senior Construction Accounts Payable Clerk and Construction Project Controller.
+                    Analyze this subcontractor invoice:
+                    1. Extract all line items, quantities, unit prices, total amounts, and vendor details.
+                    2. Audit the extracted data for arithmetic accuracy, matching totals, and flag any missing compliance requirements or math errors.
+                    
+                    Provide a structured, professional audit report.
+                    """
+                    
+                    response = model.generate_content([image, prompt])
+                    
+                    st.subheader("Audit Results")
+                    st.markdown(response.text)
+                except Exception as e:
+                    st.error(f"An error occurred during execution: {e}")
